@@ -1,0 +1,35 @@
+name: Build unsigned bridge
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compile x64 and x86 without executing the binaries
+        shell: pwsh
+        run: ./build.ps1
+      - name: Record source and file metadata
+        shell: pwsh
+        run: |
+          git rev-parse HEAD
+          Get-FileHash -Algorithm SHA256 JvLinkProbe.cs
+          foreach ($file in Get-ChildItem -LiteralPath unsigned-build -Filter *.exe) {
+            $version = $file.VersionInfo
+            if ($version.ProductName -ne 'Keiba JV-Link Bridge' -or $version.FileVersion -ne '0.1.0.0') {
+              throw 'Unexpected product metadata.'
+            }
+            Get-AuthenticodeSignature -LiteralPath $file.FullName | Select-Object Path,Status
+          }
