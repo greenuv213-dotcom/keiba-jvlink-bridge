@@ -1,0 +1,10 @@
+unsigned-build/
+*.exe
+*.dll
+*.pdb
+*.pfx
+*.pem
+*.key
+.env*
+data/
+logs/
